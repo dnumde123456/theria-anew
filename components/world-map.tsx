@@ -28,61 +28,56 @@ export default function WorldMap() {
 
   // Initialize Three.js scene
   const initScene = useCallback(() => {
-    if (!containerRef.current || mountedRef.current) return
-
+    if (!containerRef.current || mountedRef.current || !world) return; // Ensure world exists
+  
     // Create scene
-    const scene = new THREE.Scene()
-    sceneRef.current = scene
-    scene.background = new THREE.Color(0x111827)
-
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
+    scene.background = new THREE.Color(0x111827);
+  
     // Create camera
     const camera = new THREE.PerspectiveCamera(
       60,
       containerRef.current.clientWidth / containerRef.current.clientHeight,
       0.1,
       1000,
-    )
-    camera.position.set(0, Math.max(world.width, world.height), Math.max(world.width, world.height))
-    cameraRef.current = camera
-
+    );
+    
+    // Ensure world.width and world.height exist before using them
+    const worldWidth = world?.width || 100;
+    const worldHeight = world?.height || 100;
+  
+    camera.position.set(0, Math.max(worldWidth, worldHeight), Math.max(worldWidth, worldHeight));
+    cameraRef.current = camera;
+  
     // Create renderer with optimized settings
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: "high-performance",
       stencil: false,
       alpha: false,
-    })
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
-    containerRef.current.appendChild(renderer.domElement)
-    rendererRef.current = renderer
-
+    });
+    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    containerRef.current.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+  
     // Add controls
-    const controls = new OrbitControls(camera, renderer.domElement)
-    controls.enableDamping = true
-    controls.dampingFactor = 0.05
-    controls.minDistance = 20
-    controls.maxDistance = Math.max(world.width, world.height) * 2 // Increased from 200
-    controls.maxPolarAngle = Math.PI / 2 - 0.1
-    controlsRef.current = controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 20;
+    controls.maxDistance = Math.max(worldWidth, worldHeight) * 2;
+    controls.maxPolarAngle = Math.PI / 2 - 0.1;
+    controlsRef.current = controls;
+  
+    mountedRef.current = true;
+  
+    return () => cleanup();
+  }, [world]);
 
-    // Add lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
-    scene.add(ambientLight)
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
-    directionalLight.position.set(50, 50, 50)
-    directionalLight.castShadow = true
-    directionalLight.shadow.mapSize.width = 2048
-    directionalLight.shadow.mapSize.height = 2048
-    scene.add(directionalLight)
-
-    mountedRef.current = true
-
-    return () => cleanup()
-  }, [world.width, world.height])
 
   // Cleanup function
   const cleanup = useCallback(() => {
